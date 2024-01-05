@@ -10,7 +10,11 @@ router.post('/user', async (req, res) => {
     const user = new User(req.body);
     await user.save();
     const token = await user.generateAuthToken();
-    res.status(201).send({ user, token });
+   
+    const userId = {
+      id: user.id,
+    };
+    res.status(201).send({ user: userId, token });
   } catch (e) {
     res.status(400).send(e);
   }
@@ -22,7 +26,12 @@ router.post('/login', async (req, res) => {
   try {
     const user = await User.findByCredentials(req.body.username, req.body.password);
     const token = await user.generateAuthToken();
-    res.send({ user, token });
+    const limitedUser = {
+      username: user.username,
+      name: user.name,
+      email: user.email,
+    };
+    res.send({ user: limitedUser, token });
   } catch (e) {
     res.status(400).send({
       error: { message: 'You have entered an invalid username or password' },
@@ -44,7 +53,7 @@ router.post('/users/logout', auth.simple, async (req, res) => {
 });
 
 // Logout all
-router.post('/users/logoutAll', auth.enhance, async (req, res) => {
+router.post('/users/logoutAll', auth.simple, async (req, res) => {
   try {
     req.user.tokens = [];
     await req.user.save();
@@ -55,10 +64,19 @@ router.post('/users/logoutAll', auth.enhance, async (req, res) => {
 });
 
 // Get all users
-router.get('/users', auth.simple, async (req, res) => {
+router.get('/user', auth.simple, async (req, res) => {
   try {
     const users = await User.find({});
-    res.send(users);
+
+    const limitedUsers = users.map(user => ({
+      id: user.id,
+      username: user.username,
+      name: user.name,
+      email: user.email,
+      // Add other properties you want to include...
+    }));
+    res.send(limitedUsers);
+
   } catch (e) {
     res.status(400).send(e);
   }
